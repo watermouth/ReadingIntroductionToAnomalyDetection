@@ -49,6 +49,7 @@ hist(x, breaks=100)
 
 #' EM法
 #' 初期値
+#' 変数名の0, 1は便宜上のものであり、各変数について求まった値が、正解の変数名に対する値とは限らない。
 pi0 <- 0.5; pi1 <- 0.5
 mu0 <- -5; mu1 <- 5
 sig0 <- 2; sig1 <- 2
@@ -71,9 +72,9 @@ for (iter in 1:iterLength){
   mu1 <- sum(q1 * x) / (N*pi1)
   sig0 <- sqrt(sum(q0 * (x - mu0)^2) / (N*pi0))
   sig1 <- sqrt(sum(q1 * (x - mu1)^2) / (N*pi1))
-  pi_iter[iter,] <- c(pi0, pi1)
+  pi_iter[iter,] <- c(pi0,pi1)
   mu_iter[iter,] <- c(mu0,mu1)
-  sigma_iter[iter,] <- c(sig0, sig1)
+  sigma_iter[iter,] <- c(sig0,sig1)
 }
 
 #' 逐次更新による求解の様子
@@ -88,4 +89,8 @@ for (i in seq(1,length(targets))){
   }
 }
 
-
+#' 正常・異常モデルパラメータ
+mu_iter[iterLength,]
+sigma_iter[iterLength,]
+#' 割合
+pi_iter[iterLength,]
