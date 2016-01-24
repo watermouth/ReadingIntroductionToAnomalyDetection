@@ -1,0 +1,35 @@
+---
+title: "Untitled"
+author: ""
+date: '`r Sys.Date()`'
+output:
+  html_document:
+    number_sections: yes
+    toc: yes
+  pdf_document:
+    latex_engine: lualatex
+    number_sections: yes
+  beamer_presentation:
+    fig_caption: no
+    fig_height: 3
+    fig_width: 6
+    keep_tex: false
+    latex_engine: lualatex
+    toc: no
+header-includes: \usepackage{luatexja}
+---
+ 
+```{r include=FALSE}
+suppressPackageStartupMessages(library(rmarkdown))
+suppressPackageStartupMessages(library(knitr))
+suppressPackageStartupMessages(library(xtable))
+
+output.file.type <- knitr::opts_knit$get("rmarkdown.pandoc.to")
+knitr::opts_chunk$set(fig.width=14, fig.height=3)
+switch(output.file.type,
+       html = {opts_chunk$set(fig.width=14, fig.height=8)}
+       , latex = {opts_chunk$set(fig.width=14, fig.height=6)}
+       )
+
+```
+
