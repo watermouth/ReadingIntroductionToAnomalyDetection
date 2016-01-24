@@ -1,3 +1,5 @@
+title <- "任意のタイトル"
+
 #'
 #' documentation target files
 #' 
@@ -6,12 +8,14 @@ input.files <- c(
   , "GammaDistFitting.Rmd"
 )
 
-#output.format <- "html_document" 
-output.format <- "pdf_document"
+output.format <- "html_document" 
+#output.format <- "pdf_document"
+# output.format <- "beamer_presentation"
 output.file.name.body <- "DefaultReport"
 output.suffix <- switch(EXPR = output.format,
                         "html_document" = ".html"
                         , "pdf_document" = ".pdf"
+                        , "beamer_presentation" = ".pdf"
                         , "all" = ""
 )
 

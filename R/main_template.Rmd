@@ -1,5 +1,5 @@
 ---
-title: "Untitled"
+title: '`r title`'
 author: ""
 date: '`r Sys.Date()`'
 output:
