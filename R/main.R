@@ -1,11 +1,15 @@
 title <- "任意のタイトル"
+title <- "入門機械学習による異常検知"
 
 #'
 #' documentation target files
 #' 
 input.files <- c(
-  "HotellingsTheory.Rmd"
-  , "GammaDistFitting.Rmd"
+  "chapter1.Rmd"
+  , "chapter2.Rmd"
+  # "HotellingsTheory.Rmd"
+#   , "GammaDistFitting.Rmd"
+#   , "section3.2.R"
 )
 
 output.format <- "html_document" 
