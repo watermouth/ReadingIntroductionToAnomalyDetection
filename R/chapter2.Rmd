@@ -29,6 +29,10 @@ hist(Davis$weight, breaks=10)
 mu <- mean(Davis$weight) 
 s2 <- mean((Davis$weight - mu)^2)
 c(mu, s2)
+
+hist(Davis$weight, breaks=10, freq = F)
+x <- seq(1, max(Davis$weight)+10)
+lines(x, dnorm(x = x, mean = mu, sd = sqrt(s2)), col="red")
 ```
 
 * 全てのデータを使って推定したので、全てのデータを正常なデータと見做したことになる。
@@ -63,3 +67,36 @@ Davis[ap,]
 * 機械的なデータクレンジング手続きとしては、これらを除去してしまえばよい。
 * が、入力ミスでないものも含むのが気になる。閾値を変えるのも手ではある。
 
+## 最も異常な点を除いてから再度異常度計算
+もっとも異常な点`r ap[1]`を除いてみる。
+
+```{r }
+mu.old <- mu
+s2.old <- s2
+Davis2 <- Davis[-ap[1],]
+mu <- mean(Davis2$weight)
+s2 <- mean((Davis2$weight - mu)^2)
+```
+
+* 除去前 : `r paste0("mu = ", format(mu.old, digits=3), ", s2 = ", format(s2.old, digits=3))`
+* 除去後 : `r paste0("mu = ", format(mu, digits=3), ", s2 = ", format(s2, digits=3))`
+
+```{r}
+hist(Davis$weight, breaks=10, freq = F)
+x <- seq(1, max(Davis$weight)+10)
+lines(x, dnorm(x = x, mean = mu.old, sd = sqrt(s2.old)), col="red")
+lines(x, dnorm(x = x, mean = mu, sd = sqrt(s2)), col="blue")
+legend("topright", legend = c("all", "12removed"), lty=c("solid"), col=c("red", "blue"))
+```
+
+```{r, fig.height=3, fig.width=7}
+a <- (Davis$weight - mu) ^ 2 / s2
+th <- qchisq(0.99, 1) # 1次のカイ二乗分布の99%点
+plot(a, xlab="index", ylab="anomaly score")
+lines(0:200,rep(th,length(0:200)),col="red",lty=2)
+```
+
+* 異常と見做される点が増えた。  
+* 異常なデータ点`r ap[1]`を分布の推定に用いないことで分散が小さくなり、異常度が大きく算出されるようになったためである。
+
+## 多変量正規分布に基づく異常検知
