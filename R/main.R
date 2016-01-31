@@ -12,8 +12,8 @@ input.files <- c(
 #   , "section3.2.R"
 )
 
-output.format <- "html_document" 
-#output.format <- "pdf_document"
+# output.format <- "html_document" 
+output.format <- "pdf_document"
 # output.format <- "beamer_presentation"
 output.file.name.body <- "DefaultReport"
 output.suffix <- switch(EXPR = output.format,
@@ -49,6 +49,7 @@ rmarkdown::render(
   , output_file = paste0(output.file.name.body, output.suffix)
   , input = render.target
   , output_dir = output.dir
+  , encoding = "utf-8"
 )
 
 #' 
