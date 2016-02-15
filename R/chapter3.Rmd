@@ -1,0 +1,114 @@
+---
+title: "Chapter3"
+output: html_document
+---
+
+# 非正規分布に従うデータからの異常検知
+
+正常データの分布のモデルを1つの正規分布で近似するのが不適切な場合にどうするか。
+
+## 分布が左右対称でない場合  
+1次元のデータが全て非負の値をとるとき、ガンマ分布によるモデル化を行うことが良い場合がある。
+カイ2乗分布もガンマ分布である。
+
+### ガンマ分布とカイ2乗分布
+ガンマ分布は、次の密度関数を持つ分布である。
+\[ \mathcal{G}(x|k,s) = \frac{1}{s\mathcal{\Gamma} (k)}\left(\frac{x}{s}\right)^{k-1} \exp\left(-\frac{x}{s}\right) \]
+
+同じ事だが、$s$の逆数をパラメータとして次のような形で書いてある文献もある。
+\[ \mathcal{\tilde{G}}(x|a,b) = \frac{b^a}{\mathcal{\Gamma} (a)} x^{a-1} \exp\left(-bx \right) \]
+
+自由度$k$, スケール因子$s$のカイ2乗分布の別の表現ともいえる;
+\[ \chi (k,s) = \Gamma(\frac{k}{2}, 2s) \]
+
+### ガンマ分布$\mathcal{G}(k,s)$のパラメータ$k, s$の推定
+
+* 最尤推定
+正規分布のパラメータ推定量として最尤推定量を用いた。ガンマ分布でも考えられるが、
+正規分布と違って閉じた解として求めることができない。
+そこで、対数尤度を数値的に最大化することで、最尤推定量を求める。  
+Rのfitdistr関数を使うと、典型的な1次元確率分布の最尤推定を行うことができる。       
+
+
+```{r }
+library(car)
+data(Davis)
+X <- Davis
+xmin <- min(X$weight)-10
+xmax <- max(X$weight)+10
+library(MASS)
+fit.obj <- fitdistr(x = X$weight, densfun = "gamma")
+kml <- fit.obj$estimate[["shape"]]
+sml <- 1 / fit.obj$estimate[["rate"]]
+```
+
+$k=`r kml`$, $s=`r sml`$
+
+* モーメント法(Method of moments) 
+分布のモーメントを母数を用いて求め、分布のモーメントを標本から推定することで、母数の推定を行う。
+    + 最尤推定と違って閉じた形で求めることができる（常にできるかどうかは不明）
+    + 一般に偏りのある推定量である
+    + 数値的に最尤推定を行う際の初期値を求めることに使える
+    + Generalized method of moments(GMM)はMethod of momentsの一般化  
+      semiparametric modelの推定に使うらしい
+
+ガンマ分布のパラメータ$k,s$はそれぞれ、標本平均$\hat{\mu}$,標本分散$\hat{\sigma}^2$を用いて、
+$k_{mo} = \frac{(\hat{\mu})^2}{\hat{\sigma}^2}, s_{mo} = \frac{\hat{\sigma}^2}{\hat{\mu}}$ 
+として求めることができる。
+
+```{r}
+N <- nrow(X)
+mu <- mean(X$weight)
+sigma2 <- var(X$weight) * (N - 1) / N 
+kmo <- mu^2 / sigma2
+smo <- sigma2 / mu
+# テキストでは下のようにしているが、求める物が微妙に間違っている
+# si <- sd(X$weight) * (N-1)/N
+# kmo <- mu^2 / si^2 
+# smo <- si^2 / mu
+```
+
+$k=`r kmo`$, $s=`r smo`$
+
+プロットすると次のようになる。
+
+```{r}
+hist(X$weight, breaks=10, xlim=c(xmin, xmax))
+x <- seq(0, max(X$weight), by=1)
+y <- dgamma(x=x, shape = kml, scale = sml)
+par(new=T)
+plot(x, y, xlim=c(xmin, xmax), type="l", col="red", ylab = "", xlab = "", axes = F)
+y <- dgamma(x=x, shape = kmo, scale = smo)
+par(new=T)
+plot(x, y, xlim=c(xmin, xmax), type="l", col="grey", lty=2, ylab = "", xlab="", axes = F)
+```
+
+### 異常度
+いつものように$-\ln p(x^{'})$で定義する。$x^{'}$に依存しない部分は除いて定義しておく;
+\[a(x^{'}) = \frac{x^{'}}{\hat{s}} - (\hat{k} - 1)\ln \frac{x^{'}}{\hat{s}} \]  
+
+```{r}
+k <- kmo
+s <- smo
+a <- X$weight / s - (k - 1) * log(x = X$weight / s)
+th.idx <- order(a, decreasing = T)[0.01*N]
+th <- a[th.idx]
+anomaly.points <- which(a > th)
+plot(a, xlab="index", ylab="anomaly score")
+lines(1:N, rep(th,N), lty=2, col="red")
+```
+
+* 赤の点線は99%点を表す。この例では200点データがあるから、2番目に異常な点となる。  
+このように異常度の分布が明示的に分からない場合は、閾値として正常(と信じられる)データの分位点を用いる。
+
+ついでに最尤推定量を用いた場合も描いておく。
+```{r}
+k <- kml
+s <- sml
+a <- X$weight / s - (k - 1) * log(x = X$weight / s)
+th.idx <- order(a, decreasing = T)[0.01*N]
+th <- a[th.idx]
+anomaly.points <- which(a > th)
+plot(a, xlab="index", ylab="anomaly score")
+lines(1:N, rep(th,N), lty=2, col="red")
+```
