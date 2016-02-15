@@ -7,6 +7,7 @@ title <- "入門機械学習による異常検知"
 input.files <- c(
   "chapter1.Rmd"
   , "chapter2.Rmd"
+  , "chapter3.Rmd"
   # "HotellingsTheory.Rmd"
 #   , "GammaDistFitting.Rmd"
 #   , "section3.2.R"
