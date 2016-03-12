@@ -12,13 +12,13 @@ output: html_document
 
 ### ガンマ分布とカイ2乗分布
 ガンマ分布は、次の密度関数を持つ分布である。
-\[ \mathcal{G}(x|k,s) = \frac{1}{s\mathcal{\Gamma} (k)}\left(\frac{x}{s}\right)^{k-1} \exp\left(-\frac{x}{s}\right) \]
+\[ \mathcal{G}(x|k,s) = \frac{1}{s\varGamma (k)}\left(\frac{x}{s}\right)^{k-1} \exp\left(-\frac{x}{s}\right) \]
 
 同じ事だが、$s$の逆数をパラメータとして次のような形で書いてある文献もある。
-\[ \mathcal{\tilde{G}}(x|a,b) = \frac{b^a}{\mathcal{\Gamma} (a)} x^{a-1} \exp\left(-bx \right) \]
+\[ \mathcal{\tilde{G}}(x|a,b) = \frac{b^a}{\varGamma (a)} x^{a-1} \exp\left(-bx \right) \]
 
 自由度$k$, スケール因子$s$のカイ2乗分布の別の表現ともいえる;
-\[ \chi (k,s) = \Gamma(\frac{k}{2}, 2s) \]
+\[ \chi (k,s) = \varGamma(\frac{k}{2}, 2s) \]
 
 ### ガンマ分布$\mathcal{G}(k,s)$のパラメータ$k, s$の推定
 
