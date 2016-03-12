@@ -8,7 +8,7 @@ output: html_document
 正常データの分布のモデルを1つの正規分布で近似するのが不適切な場合にどうするか。
 
 ## 分布が左右対称でない場合  
-1次元のデータが全て非負の値をとるとき、ガンマ分布によるモデル化を行うことが良い場合がある。
+1次元のデータが全て非負の値をとるとき、ガンマ分布によるモデル化を行うと良い場合がある。
 
 ### ガンマ分布とカイ2乗分布
 ガンマ分布は、次の密度関数を持つ分布である。
@@ -23,7 +23,8 @@ output: html_document
 ### ガンマ分布$\mathcal{G}(k,s)$のパラメータ$k, s$の推定
 
 * 最尤推定
-正規分布のパラメータ推定量として最尤推定量を用いた。ガンマ分布でも考えられるが、
+正規分布のパラメータ推定を行う際に最尤推定を用いた。
+もちろんガンマ分布でも最尤推定することができるが、
 正規分布と違って閉じた解として求めることができない。
 そこで、対数尤度を数値的に最大化することで、最尤推定量を求める。  
 Rのfitdistr関数を使うと、典型的な1次元確率分布の最尤推定を行うことができる。       
@@ -49,7 +50,7 @@ $k=`r kml`$, $s=`r sml`$
     + 一般に偏りのある推定量である
     + 数値的に最尤推定を行う際の初期値を求めることに使える
     + Generalized method of moments(GMM)はMethod of momentsの一般化  
-      semiparametric modelの推定に使うらしい
+      semiparametric modelの推定に使うらしい（だれかやって下さい）
 
 ガンマ分布のパラメータ$k,s$はそれぞれ、標本平均$\hat{\mu}$,標本分散$\hat{\sigma}^2$を用いて、
 $k_{mo} = \frac{(\hat{\mu})^2}{\hat{\sigma}^2}, s_{mo} = \frac{\hat{\sigma}^2}{\hat{\mu}}$ 
@@ -110,4 +111,89 @@ th <- a[th.idx]
 anomaly.points <- which(a > th)
 plot(a, xlab="index", ylab="anomaly score")
 lines(1:N, rep(th,N), lty=2, col="red")
+```
+
+## カイ2乗分布による異常度の当てはめ
+
+実データの分布をじゅうぶん正規分布で近似できないとき、
+異常度の分布を自由度Mのカイ2乗分布分布であると見做すと、
+異常と見做されるケースが多くなりがち、らしい。
+
+正規分布からサンプリングした値とFXプライス(USDJPY)で比べてみる。
+
+```{r, cache=TRUE}
+library(quantmod)
+getFX(Currencies = "USD/JPY", from = as.Date("2015-01-01"), to = as.Date("2015-12-31"))
+plot(USDJPY)
+x2 <- as.numeric(USDJPY)
+x2 <- diff(x2)
+x2 <- (x2 - mean(x2)) / sd(x2)
+count <- length(x2)
+x1 <- rnorm(n = count, mean = 0, sd = 1)
+```
+
+用意したデータのNormal q-q plot
+
+正規分布に従う変数であるならば点が直線上に乗る。
+
+* x1 : 標準正規分布からサンプリング
+* x2 : プライス階差系列を平均0,分散1に標準化（比較しやすくするため）したもの
+
+```{r}
+qqnorm(x1, ylim = c(-4,4)); qqline(x1); title(sub = "x1")
+qqnorm(x2, ylim = c(-4,4)); qqline(x2); title(sub = "x2")
+```
+
+x1に比べると、x2はあまり直線上に乗っていないことが分かる。
+
+さて、異常度を求めて、閾値を1%に定めて検知してみる。
+
+```{r}
+a1 <- (x1 - mean(x1)) ^ 2 / mean((x1-mean(x1))^2)
+a2 <- (x2 - mean(x2)) ^ 2 / mean((x2-mean(x2))^2)
+th <- qchisq(p=0.99, df=1)
+a1_detected <- which(a1 > th)
+a2_detected <- which(a2 > th)
+```
+
+サンプルサイズは`r count`、理論上は1% = `r count * 0.01`点が検知される。[^3.2.a]
+
+このサンプルで検知された点の個数は次の通り;  
+x1 : `r length(a1_detected)`, x2 : `r length(a2_detected)`
+
+[^3.2.a]: より正確には、検知される点の割合$r$を分位点で定めているから、あるサンプルの点が検知される確率は$r$、検知されない確率は$1-r$である。つまり検知される点の個数は2項分布に従う。
+サンプルサイズ$N$とすれば$Nr$=`r count * 0.01` 点が期待値、
+標準偏差$\sqrt{Nr(1-r)}$=`r sqrt(count * 0.01 * (1-0.01))`である。
+
+他の期間だったらどうか、一応確認しておこう。
+```{r, cache=T}
+source("section3.1.R")
+ret <- compare_FX_price_diff_anomaly(
+  start_date = as.Date("2008-01-01")
+  , end_date = as.Date("2012-03-31"))
+count <- ret$count
+a1_detected <- which(ret$a1 > ret$th)
+a2_detected <- which(ret$a2 > ret$th)
+```
+
+サンプルサイズは`r count`、理論上は1% = `r count * 0.01`点が検知される。
+
+このサンプルで検知された点の個数は次の通り;  
+
+x1 : `r length(a1_detected)`[^3.2.b], x2 : `r length(a2_detected)`
+
+[^3.2.b]:標準偏差$\sqrt{Nr(1-r)}$=`r sqrt(count * 0.01 * (1-0.01))`
+
+参考までに、前日からのプライス階差系列について異常検知された日付とプライスをみておく。
+
+```{r echo=F, results='asis'}
+library(xtable)
+print(xtable(x = data.frame(ret$price[a2_detected])), type = output.file.type)
+```
+
+* 補足
+
+>2008年9月15日に、アメリカ合衆国の投資銀行であるリーマン・ブラザーズが破綻 >(https://ja.wikipedia.org/wiki/リーマン・ショック より)
+
+```{r echo=F}
 ```
