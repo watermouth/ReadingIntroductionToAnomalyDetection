@@ -119,7 +119,10 @@ lines(1:N, rep(th,N), lty=2, col="red")
 異常度の分布を自由度Mのカイ2乗分布分布であると見做すと、
 異常と見做されるケースが多くなりがち、らしい。
 
-正規分布からサンプリングした値とFXプライス(USDJPY)で比べてみる。
+### FXプライス(USDJPY)の階差系列の正規性と異常度
+
+USDJPYプライスの階差系列が正規分布に従うと見做して異常検知をしてみる。
+正規分布からサンプリングした値と比較しながらみてみよう。
 
 ```{r, cache=TRUE}
 library(quantmod)
@@ -186,13 +189,52 @@ x1 : `r length(a1_detected)`[^3.2.b], x2 : `r length(a2_detected)`
 [^3.2.b]:標準偏差$\sqrt{Nr(1-r)}$=`r sqrt(count * 0.01 * (1-0.01))`
 
 参考までに、
+
 >2008年9月15日に、アメリカ合衆国の投資銀行であるリーマン・ブラザーズが破綻 >(https://ja.wikipedia.org/wiki/リーマン・ショック より)
+
 を引用し、前日からのプライス階差系列について異常検知された日付とプライスをみておく。
 
 ```{r echo=F, results='asis'}
 library(xtable)
-print(xtable(x = data.frame(ret$price[a2_detected])), type = output.file.type, comment = FALSE)
+# output.file.type <- "html"
+print(xtable(x = data.frame(ret$price[a2_detected]), caption = "USDJPY prices when there were anomaly price differences"), type = output.file.type, comment = FALSE)
 ```
+
+```{r echo=F, results='asis'}
+if(output.file.type == "latex"){
+  cat("\\newpage")
+}
+```
+
+### 本題
+
+カイ二乗分布はガンマ分布なので、method of moments（積率法）により
+自由度とスケール因子を求めることができる。
+
+```{r}
+a1 <- (x1 - mean(x1)) ^ 2 / mean((x1-mean(x1))^2)
+a2 <- (x2 - mean(x2)) ^ 2 / mean((x2-mean(x2))^2)
+f <- function(mean, variance){
+  list(k=2*mean^2 / variance, s=variance / (2*mean))
+}
+count <- length(a1)
+param1 <- f(mean(a1), var(a1) *(count - 1) / count)
+param2 <- f(mean(a2), var(a2) *(count - 1) / count)
+```
+
+推定されたパラメータは次の表の通り;
+
+データセット|自由度|スケール因子|
+------------|------|-------------
+x1（正規分布からのサンプル）|`r param1$k`|`r param1$s`
+x2（プライス階差系列）|`r param2$k`|`r param2$s`
+
+x1の自由度は1に近いが、x2つまりプライス階差の自由度はその半分程度である。
+
+このようにして推定される自由度を有効次元(effective dimension)と呼ぶ。
+次元$M$の多次元データの場合は実質的に効いていない次元があることにより、
+有効次元のほうがぐっと小さくなるとのことである。
+今回挙げた例は1次元データなので、この辺は確認出来ていない。
 
 ```{r echo=F}
 ```
