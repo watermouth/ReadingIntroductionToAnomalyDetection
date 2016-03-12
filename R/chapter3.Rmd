@@ -166,6 +166,7 @@ x1 : `r length(a1_detected)`, x2 : `r length(a2_detected)`
 標準偏差$\sqrt{Nr(1-r)}$=`r sqrt(count * 0.01 * (1-0.01))`である。
 
 他の期間だったらどうか、一応確認しておこう。
+
 ```{r, cache=T}
 source("section3.1.R")
 ret <- compare_FX_price_diff_anomaly(
@@ -184,16 +185,14 @@ x1 : `r length(a1_detected)`[^3.2.b], x2 : `r length(a2_detected)`
 
 [^3.2.b]:標準偏差$\sqrt{Nr(1-r)}$=`r sqrt(count * 0.01 * (1-0.01))`
 
-参考までに、前日からのプライス階差系列について異常検知された日付とプライスをみておく。
+参考までに、
+>2008年9月15日に、アメリカ合衆国の投資銀行であるリーマン・ブラザーズが破綻 >(https://ja.wikipedia.org/wiki/リーマン・ショック より)
+を引用し、前日からのプライス階差系列について異常検知された日付とプライスをみておく。
 
 ```{r echo=F, results='asis'}
 library(xtable)
-print(xtable(x = data.frame(ret$price[a2_detected])), type = output.file.type)
+print(xtable(x = data.frame(ret$price[a2_detected])), type = output.file.type, comment = FALSE)
 ```
-
-* 補足
-
->2008年9月15日に、アメリカ合衆国の投資銀行であるリーマン・ブラザーズが破綻 >(https://ja.wikipedia.org/wiki/リーマン・ショック より)
 
 ```{r echo=F}
 ```
