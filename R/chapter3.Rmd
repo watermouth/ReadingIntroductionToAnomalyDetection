@@ -267,14 +267,14 @@ hist(x, breaks=100)
 ```
 
 このような場合にそれぞれの分布と点の個数の割合を求める方法として、
-Expectation-Maximization Algorhythm（EMアルゴリズム）が知られている。
-これについては問題が複雑にならない範囲で一般化し次節で説明することとし、
+Expectation-Maximization Algorithm（EMアルゴリズム）が知られている。
+これについて問題が複雑にならない範囲で一般化し次節で説明することとし、
 ひとまずアルゴリズムと実行結果を以下に示す。
 
 #### 1次元混合正規分布のEM法
  
 $K$成分混合正規分布モデル
- 
+
 \[p(x) = \sum_{i=1}^{K} \pi_{i} N(x|\mu_i,\sigma_i^2) \]
  
 parameter $\{ \pi_i, \mu_i, \sigma_i^2 \}_{i=1,...,K}$ を求める手順
@@ -295,7 +295,9 @@ parameter $\{ \pi_i, \mu_i, \sigma_i^2 \}_{i=1,...,K}$ を求める手順
 
 ```{r}
 #' 1) 初期値
-#' 変数名の0, 1は便宜上のものであり、各変数について求まった値が、正解の変数名に対する値とは限らない。今の例では2つの正規分布を仮定している。初期値の変数名中の0,1は、データxの分布0,1に対応するとは限らない。
+#' 変数名の0, 1は便宜上のものであり、各変数について求まった値が、正解の変数名に対する値とは限らない。
+#' 今の例では2つの正規分布を仮定しているが、
+#' 初期値の変数名中の0,1は、データxの分布0,1に対応するとは限らない。
 
 pi0 <- 0.5; pi1 <- 0.5
 mu0 <- -5; mu1 <- 5
@@ -331,7 +333,7 @@ targets <- list(pi_iter, mu_iter, sigma_iter)
 target.names <- names(solutions)
 for (i in seq(1,length(targets))){
   target <- targets[[i]]
-  cat(paste0(target.names[i], "の収束の様子", "\n\n"))
+  cat(paste0("$\\", target.names[i], "$ の収束の様子", "\n\n"))
   matplot(x = 1:iterLength, target, pch = c("0","1")
           , xlab = "iter", ylab = target.names[i])
   for (j in seq(1,length(solutions[[i]]))){
@@ -348,7 +350,7 @@ sigma_iter[iterLength,]
 pi_iter[iterLength,]
 ```
 
-### K成分混合正規分布煮体するEMアルゴリズムによるパラメータ推定手続きの導出
+### K成分混合正規分布に対するEMアルゴリズムによるパラメータ推定手続きの導出
 
 データセット$\mathcal{D} = \{x^{(n)} \in R^M, n=1...N\}$
 の各点が、$K$個の異なる正規分布のいずれかからサンプリングされたものであると仮定しよう。
