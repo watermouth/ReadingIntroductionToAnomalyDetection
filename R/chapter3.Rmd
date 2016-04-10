@@ -350,12 +350,13 @@ sigma_iter[iterLength,]
 pi_iter[iterLength,]
 ```
 
-### K成分混合正規分布に対するEMアルゴリズムによるパラメータ推定手続きの導出
+### K成分混合正規分布のパラメータ推定
 
 データセット$\mathcal{D} = \{x^{(n)} \in R^M, n=1...N\}$
 の各点が、$K$個の異なる正規分布のいずれかからサンプリングされたものであると仮定しよう。
 各正規分布の平均と分散行列を表すパラメータを$(\mu_i, \Sigma _i), i=1,...,K$とする。
 
+#### EMアルゴリズムの導出
 点$x$が$i$番目の正規分布に所属する点であることを
 点$x$は$i$番目のクラスに属すと呼び、
 点$x$が属すクラスを表す変数$z$を用いて$z=i$と表すことにすると、
@@ -370,7 +371,7 @@ $\delta _{z,i}$は$z=i$のとき1, そうでないとき0を取る。
 $x$の周辺密度は
 \[p(x|\{(\mu_i, \Sigma_i),i=1,...,K\}) = \sum_{i=1}^K p(x|z=i, \mu_i, \Sigma_i)p(z=i)
 = \sum_{i=1}^K \pi_i N(x|\mu_i, \Sigma_i)\]
-ここで、$\pi_i := p(z=i)$であり$z$の事前確率（記号上紛らわしいが周辺確率ではない）である。
+ここで、$\pi_i := p(z=i)$であり$z$の周辺確率である。
 
 未知パラメータセット$\Theta := \{(\pi_i, \mu_i, \Sigma_i),i=1,...,K\}$
 をどのように推定すると良いだろうか。
@@ -413,6 +414,8 @@ Jensenの不等式の左辺=対数尤度そのものではなく、右辺を最�
 \]
 Jensenの不等式の等号の条件を満たす解であると同時に、クラス$z$の事後確率となっている。
 $p(z=i|x) = E[\rm{I}_{\{z=i\}}|x]$より、$\mathcal{D}, \Theta$から求まる「期待値」ともいえる。
+が、通常EMアルゴリズムというときの「期待値」はJensenの不等式の右辺のことを指すようである。
+確かに右辺は$q$を確率とする期待値になっている。
 
 最適でないパラメータ$\Theta^{'}$に対して全$q_i^{(n)}$を求め、
 $q_i^{(n)}$所与として
@@ -426,7 +429,7 @@ $q_i^{(n)}$所与として
 求まった$\Theta$を所与として再び$q_i^{(n)}$を求めるところから繰り返し、
 $\Theta^{'}$と$\Theta$が十分収束したならば繰り返しをやめる。
 
-このように「期待値」を求める手続きと「最大化」を行う手続きを繰り返すことで
+このように「期待値」（実際は確率$q$のみ）を求める手続きと「最大化」を行う手続きを繰り返すことで
 最尤推定を行う事ができる。
 
 「期待値」-「最大化」の繰り返しにより対数尤度の最大化ができることを見やすくするため、$l-1$番目の$\Theta=\Theta_{l-1}$を所与として$g(\Theta|\Theta_{l-1})$の最大化により求めた$\Theta$を$\Theta_l$と表すと、次の関係式が成立するということである。
@@ -434,17 +437,130 @@ $\Theta^{'}$と$\Theta$が十分収束したならば繰り返しをやめる。
   L(\Theta_{l} | \mathcal{D}) \ge g(\Theta_{l}|\Theta_{l-1}) \ge g(\Theta_{l-1}|\Theta_{l-1}) =  L(\Theta_{l-1} | \mathcal{D}) 
 \]
 
-* 補足
+* 補足  
 実用上は初期値次第で推定がうまく行かないケースがあるらしい。
 それを避けるため、$z$ではなく$\pi_i,i=1,\cdots,K$
 に体する事前分布(Dirichlet分布)を仮定することでスムージングを行ったりするらしい。
 
+#### クラスタ数$K$の決定方法
+ベイズ情報量基準(Baysian Information Criteria(BIC))によって最適なクラスター数を自動的に
+決定することができる。
+$\hat{\Theta}$をパラメータとすると混合正規分布に対するBICは、${\pi_k}$に$K$個, $\mu_k$に$KM$個, $\Sigma_k$に$KM(M+1)/2$個のパラメータを使うため、
 
+\[ \mathrm{BIC} = -2L(\hat{\Theta} | \mathcal{D}) + \frac{K}{2}(M+1)(M+2)\ln(N)  \]
 
+となる。
 
+#### 例:身長-体重データのクラスタリング
+Rのmclustというパッケージを使うとBICを使って自動的に最適なクラスター数を決定して
+分類してくれる。
 
+```{r}
+rm(list=ls()); suppressPackageStartupMessages(library(mclust)); library(car)
+X <- Davis[-12, c("weight", "height")] # 12番目の異常データを除いておく
+result <- Mclust(data=X)
+print(summary(result, parameters = TRUE))
+plot(result, what = "BIC")
+plot(result, what = "classification")
+plot(result, what = "uncertainty")
+plot(result, what = "density")
+result_density <- densityMclust(data=X)
+plot(result_density, what="density", type="image")
+print(result$G) # クラスター数
+print(result$parameters$variance$sigma) # 分散行列
+```
 
+* グラフの補足説明  
+    * BIC : 分散行列のタイプ毎のBIC. モデル詳細はmclustのappendix のClustering Modelsを見ると良さそう。
+    * uncertainty : 各クラスターに対する事後分類確率（$p(z|x)$)を1から引いた値。
+    * density : クラスター密度($p(x|z)$)と思われる。
 
+次に異常度$-\ln p(x)$を求めておく。
+
+```{r}
+pi <- result$parameters$pro
+X <- Davis[, c("weight", "height")] # 12番目の異常データも含める
+# $p(x|z)$の行列
+XX <- cdens(modelName = result$modelName, data=X, parameters = result$parameters)
+# $p(x)$のベクトル
+a <- - log(as.matrix(XX) %*% pi)
+plot(a, ylab="anomaly score")
+axis(side = 1, at = which.max(a))
+abline(v=which.max(a))
+```
+
+12番目の標本の異常度が大きい事が明確に出る。
+
+では12番目を除去せずにクラスタリングするとどうなるか。
+
+```{r, echo=F}
+X <- Davis[, c("weight", "height")] # 12番目の異常データを除いておく
+result <- Mclust(data=X)
+print(summary(result, parameters = TRUE))
+plot(result, what = "BIC")
+plot(result, what = "classification")
+plot(result, what = "uncertainty")
+plot(result, what = "density")
+result_density <- densityMclust(data=X)
+plot(result_density, what="density", type="image")
+print(result$G) # クラスター数
+print(which(result$classification == 3)) #クラスター3に属す点
+print(result$parameters$variance$sigma) # 分散行列
+```
+
+1点しかないクラスターに対して分散行列が計算出来てしまっている。
+クラスターに属す点が1つだけになるような異常値を含めると、
+分散行列の計算ができないためクラスタリングがうまくいかなくなるはずである。
+mclustパッケージでは内部的な工夫で計算できるようになっているらしいが、
+結果として異常な結果が出てきたりするということのようだ。
+この場合は何も考えずにクラスタリングして、おかしな1点が出てきたらそれを除去した上で
+改めてクラスタリングすればよいと思う。
+
+#### mclustの例をいくつか
+
+* 米国の州毎の年間平均降水量
+
+```{r}
+result <- Mclust(data=precip)
+```
+```{r echo=F}
+plot(result, what = "BIC")
+plot(result, what = "classification")
+plot(result, what = "uncertainty")
+plot(result, what = "density")
+```
+
+* The Iris データ
+
+```{r}
+result <- Mclust(iris[,-5])
+```
+```{r echo=F}
+plot(result, what = "BIC")
+plot(result, what = "classification")
+plot(result, what = "uncertainty")
+plot(result, what = "density")
+print(result$BIC)
+```
+
+3種類のアヤメデータだが、
+クラスター数が3のモデルは惜しくもBICでは2番目に良いモデルと判断されている。
+そこで3以上のクラスター数で選択させて3になるようにしてみる。
+
+```{r}
+result <- Mclust(iris[,-5], G=3:9)
+```
+```{r echo=F}
+plot(result, what = "BIC")
+plot(result, what = "classification")
+plot(result, what = "uncertainty")
+plot(result, what = "density")
+print(result$BIC)
+```
+
+#### $pi$についての事前分布を仮定したMAP解
+
+### 混合正規分布のオンライン推定
 
 
 ```{r echo=F}
