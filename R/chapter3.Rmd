@@ -558,10 +558,90 @@ plot(result, what = "density")
 print(result$BIC)
 ```
 
-#### $pi$についての事前分布を仮定したMAP解
+* メモ  
+    * モデルの orientation など確認したい
+
+#### $\pi$についての事前分布を仮定したMAP解
+$\pi$をEMアルゴリズムで求める際に初期値によっては$\pi$が非常に小さくなる
+ようなクラスターが出てくる可能性があり、そのようなときに数値的に不安定になる恐れがある。
+パラメータに対する一様でない事前分布を仮定し、事後確率を最大化する形でパラメータを求める
+ことで$\pi$に対して一定水準程度以上の値を保証することができる。
+
+事後確率最大解(MAP解)を$\Theta_{MAP}$とすると、
+
+\[ \Theta_{MAP} = {\rm argmax}_{\Theta} p(\Theta|\mathcal{D})
+=  {\rm argmax}_{\Theta} \frac{ p(\mathcal{D} | \Theta) p(\Theta)}
+{\int p(\mathcal{D} | \Theta) p(\Theta) d\Theta}
+= {\rm argmax}_{\Theta} p(\mathcal{D} | \Theta) p(\Theta)
+= {\rm argmax}_{\Theta} L(\Theta|\mathcal{D}) + \ln (p(\Theta))
+\]
+
+従って、対数尤度 + $\Theta$の事前分布の対数 を最大化する$\Theta$を求めれば良い。
+事前分布としてディレクレ分布を仮定しよう。
+ディリクレ分布の密度関数はパラメータを$\alpha = (\alpha_1,...,\alpha_K), \forall i \alpha_i > 0$とすると
+
+\[ Dir(\pi|\alpha) := Dir(\pi_1,...,\pi_K | \alpha_1,...,\alpha_K)
+:= \frac{\Gamma(\alpha_1) \cdots \Gamma(\alpha_K)}{\Gamma(\alpha_1 + \cdots + \alpha_K)}
+  \pi_1 ^{\alpha_1 - 1} \cdots \pi_K ^{\alpha_K - 1}
+\]
+
+であるから、EMアルゴリズムの「最大化」ステップにおいて対数尤度の右辺 + $\ln Dir(\pi|\alpha)$
+を$\sum_i \pi = 1$の下で最大化する$\Theta$を求めればよい。これは
+
+\[
+\sum_{n=1}^{N} \sum_{i=1}^K q_i^{(n)} \ln \left[ \frac{\pi_i N(x^{(n)}|\mu_i, \Sigma_i)}{q_i^{(n)}} \right] 
++ \sum_{i=1}^{K} (\alpha_i - 1) \ln \pi_i 
+\]
+を最大化すればよい。ラグランジュの未定常数を$\lambda$として
+ラグランジュの未定常数法を適用し、$\pi_i$で偏微分した式を書くと
+
+\[
+\frac{\sum_{n=1}^{N} q_i^{(n)} + (\alpha_i - 1)}{\pi_i} - \lambda = 0
+\]
+
+これを解いて
+
+\[
+\pi_i = \frac{q_i^{(n)} + (\alpha_i - 1)}
+        { \sum_{n=1}^{N} \{ q_i^{(n)} + \alpha_i - 1 \}}
+\]
+
+$\alpha_i = \gamma + 1$と置くことにすれば
+
+\[
+\pi_i = \frac{q_i^{(n)} + \gamma }{\sum_{n=1}^{N} q_i^{(n)} + N\gamma}
+\]
+
+となって$q_i^{(n)}$が小さくとも$\pi_i$はある程度の値を持つ事ができる。
 
 ### 混合正規分布のオンライン推定
+新しく入手出来るデータのみを使い逐次的に分類を行うためには、
+最大化する対数事後確率（または対数尤度）について入手時点が古いものの寄与を小さくする
+重みを導入してやればよい。
 
+時点$t$での重みを$w_t^{(n)}, n=1,...,t$とし、
+最大化対象もしくは最大か対象に含まれる対数尤度といえるが、
+これをこの重み付きの量で置き換えて考える;
 
-```{r echo=F}
-```
+\[
+L(\Theta | \mathcal{D})
+= \sum_{n=1}^{t} w_t^{(n)} \ln \left[ \sum_{i=1}^K \pi_i N(x^{(n)}|\mu_i, \Sigma_i) \right]
+\]
+
+$N$が$t$に置き換わっていることに注意する。
+この形にしたうえでこれまでの議論を適用し、
+$\pi_i^{(t)}, \mu_i^{(t)}, \Sigma_t^{(t)}, i=1,...,K$を求める式を作る事ができる。
+
+さて$t-1$までのパラメータが求まっているとして、新たなデータ$x^{(t)}$が得られたときに
+$t$でのパラメータを求めることを考えよう。
+
+重みの形としては$\beta \in (0,1)$を用いて
+\[w_t^{(n)} = \beta (1-\beta)^{t-n} \]
+とすることで、$t-1$時点の量、パラメータ、$t$時点のデータを用いて
+$t$時点のパラメータ$\pi_i^{(t)}, \mu_i^{(t)}, \Sigma_t^{(t)}, i=1,...,K$
+を求めることができる。
+
+* 蛇足  
+$\pi_i^{(t)}$が$t$に応じて更新されていくが、
+$\pi_i^{(s)}, s \lt t$は更新しないため$s$時点に認識した点がどのクラスターに属すか
+という認識は更新されないということになる。
