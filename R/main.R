@@ -1,3 +1,4 @@
+rm(list=ls())
 title <- "任意のタイトル"
 title <- "入門機械学習による異常検知"
 
@@ -56,4 +57,4 @@ rmarkdown::render(
 #' 
 #' cleaning
 #' 
-file.remove(render.target)
+#file.remove(render.target)
